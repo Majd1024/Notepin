@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Taking App</title>
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .categories {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .category {
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .all { background: #d3e3fd; }
+        .personal { background: #ffd700; }
+        .work { background: #d4edda; }
+        .other { background: #f8d7da; }
+        .note {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .note-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-icon, .delete-icon {
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .edit-icon:hover {
+            color: #007bff;
+        }
+        .delete-icon:hover {
+            color: #dc3545;
+        }
+        .pen-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .note-category {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Note Taking App</h2>
+        <div class="categories">
+            <div class="category all" onclick="filterNotes('all')">All</div>
+            <div class="category personal" onclick="filterNotes('personal')">Personal</div>
+            <div class="category work" onclick="filterNotes('work')">Work</div>
+            <div class="category other" onclick="filterNotes('other')">Other</div>
+        </div>
+        <!-- Notes will be dynamically added here -->
+    </div>
+    <button class="pen-icon" onclick="location.href='write.html'">✎</button>
+
+    <script>
+        // Function to load and display notes
+        function loadNotes(filterCategory = 'all') {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const notesContainer = document.querySelector('.container');
+
+            // Clear existing notes (optional, to avoid duplicates)
+            const existingNotes = document.querySelectorAll('.note');
+            existingNotes.forEach(note => note.remove());
+
+            // Add each note to the container
+            notes.forEach((note, index) => {
+                if (filterCategory !== 'all' && note.category !== filterCategory) return; // Filter by category
+
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.innerHTML = `
+                    <div class="note-header">
+                        <strong>${note.title}</strong>
+                        <div class="note-actions">
+                            <span class="edit-icon" onclick="editNote(${index})">✎</span>
+                            <span class="delete-icon" onclick="deleteNote(${index})">🗑️</span>
+                        </div>
+                    </div>
+                    <p>${note.content}</p>
+                    <small>📅 ${note.date}</small>
+                    <div class="note-category">Category: ${note.category}</div>
+                `;
+                notesContainer.appendChild(noteElement);
+            });
+        }
+
+        // Function to delete a note
+        function deleteNote(index) {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.splice(index, 1); // Remove the note at the specified index
+            localStorage.setItem('notes', JSON.stringify(notes)); // Update localStorage
+            loadNotes(); // Reload the notes
+        }
+
+        // Function to edit a note
+        function editNote(index) {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const noteToEdit = notes[index];
+            localStorage.setItem('noteToEdit', JSON.stringify({ ...noteToEdit, index })); // Save the note to edit
+            window.location.href = 'write.html'; // Redirect to write.html
+        }
+
+        // Function to filter notes by category
+        function filterNotes(category) {
+            loadNotes(category);
+        }
+
+        // Load notes when the page loads
+        window.onload = () => loadNotes('all');
+    </script>
+</body>
+</html>

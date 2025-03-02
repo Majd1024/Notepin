@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fdf5dc;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        .back-btn {
+            font-size: 32px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            background: transparent;
+            outline: none;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .note-area {
+            width: 100%;
+            height: 300px;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 22px;
+            margin-top: 10px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px;
+        }
+        .footer button {
+            background: transparent;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        .font-options {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 5px;
+        }
+        .font-options button {
+            display: block;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+        .category-select {
+            margin-left: 20px; /* Add space between back button and dropdown */
+        }
+        .category-select label {
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        .category-select select {
+            font-size: 16px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .color-picker {
+            margin-left: 20px; /* Add space between dropdown and color picker */
+        }
+        .color-picker label {
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        .color-picker input[type="color"] {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">⬅️</button>
+            <div class="category-select">
+                <label for="noteCategory"></label>
+                <select id="noteCategory">
+                    <option value="personal">Personal</option>
+                    <option value="work">Work</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="color-picker">
+                <label for="fontColor">Color:</label>
+                <input type="color" id="fontColor" value="#000000">
+            </div>
+        </div>
+        <input type="text" class="title" placeholder="Title" id="noteTitle">
+        <textarea class="note-area" placeholder="Write your note..." id="noteContent"></textarea>
+    </div>
+    <div class="footer">
+        <button onclick="toggleFontOptions()">🅰️</button>
+        <button onclick="saveNote()">✔️</button>
+    </div>
+    <div class="font-options" id="fontOptions">
+        <button onclick="changeFont('Arial')">Arial</button>
+        <button onclick="changeFont('Courier New')">Courier New</button>
+        <button onclick="changeFont('Georgia')">Georgia</button>
+        <button onclick="changeFont('Times New Roman')">Times New Roman</button>
+        <button onclick="changeFont('Verdana')">Verdana</button>
+        <button onclick="toggleBold()">Bold</button>
+    </div>
+
+    <script>
+        // Check if we're editing a note
+        const noteToEdit = JSON.parse(localStorage.getItem('noteToEdit'));
+
+        if (noteToEdit) {
+            document.getElementById('noteTitle').value = noteToEdit.title;
+            document.getElementById('noteContent').value = noteToEdit.content;
+            document.getElementById('noteCategory').value = noteToEdit.category || 'personal'; // Set category if editing
+            document.getElementById('fontColor').value = noteToEdit.color || '#000000'; // Set color if editing
+            document.getElementById('noteTitle').style.color = noteToEdit.color || '#000000';
+            document.getElementById('noteContent').style.color = noteToEdit.color || '#000000';
+        }
+
+        // Function to go back to index.html
+        function goBack() {
+            localStorage.removeItem('noteToEdit'); // Clear the note to edit
+            window.location.href = 'index.html';
+        }
+
+        // Function to save the note
+        function saveNote() {
+            const noteTitle = document.querySelector('.title').value;
+            const noteContent = document.querySelector('.note-area').value;
+            const noteCategory = document.getElementById('noteCategory').value;
+            const noteColor = document.getElementById('fontColor').value;
+
+            if (!noteTitle || !noteContent) {
+                alert('Please fill in both the title and content!');
+                return;
+            }
+
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const note = {
+                title: noteTitle,
+                content: noteContent,
+                category: noteCategory, // Save the selected category
+                color: noteColor, // Save the selected color
+                date: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }) // Format: MM-DD
+            };
+
+            if (noteToEdit) {
+                // If editing, replace the old note
+                notes[noteToEdit.index] = note;
+            } else {
+                // If creating a new note, add it to the array
+                notes.push(note);
+            }
+
+            localStorage.setItem('notes', JSON.stringify(notes)); // Save back to localStorage
+            localStorage.removeItem('noteToEdit'); // Clear the note to edit
+            alert('Note saved!');
+            goBack(); // Redirect to index.html
+        }
+
+        // Function to toggle font options
+        function toggleFontOptions() {
+            let fontMenu = document.getElementById('fontOptions');
+            fontMenu.style.display = fontMenu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Function to change font family
+        function changeFont(font) {
+            document.getElementById('noteContent').style.fontFamily = font;
+            document.getElementById('noteTitle').style.fontFamily = font;
+            document.getElementById('fontOptions').style.display = 'none'; // Hide menu after selection
+        }
+
+        // Function to toggle bold text
+        function toggleBold() {
+            let noteContent = document.getElementById('noteContent');
+            let noteTitle = document.getElementById('noteTitle');
+            if (noteContent.style.fontWeight === 'bold') {
+                noteContent.style.fontWeight = 'normal';
+                noteTitle.style.fontWeight = 'normal';
+            } else {
+                noteContent.style.fontWeight = 'bold';
+                noteTitle.style.fontWeight = 'bold';
+            }
+            document.getElementById('fontOptions').style.display = 'none'; // Hide menu after selection
+        }
+
+        // Function to change font color
+        document.getElementById('fontColor').addEventListener('input', function() {
+            const color = this.value;
+            document.getElementById('noteTitle').style.color = color;
+            document.getElementById('noteContent').style.color = color;
+        });
+    </script>
+</body>
+</html>
