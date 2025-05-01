@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fdf5dc;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 15px;
+        }
+        .back-btn {
+            font-size: 32px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            margin-right: 15px;
+        }
+        .date-info {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .title-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 32px;
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            background: transparent;
+            outline: none;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .date-icon {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            font-size: 24px;
+            color: #666;
+        }
+        .checklist-container {
+            margin-top: 20px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e0d1;
+        }
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            margin-right: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .checkbox.checked {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+        .checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 16px;
+        }
+        .item-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            outline: none;
+            padding: 5px 0;
+        }
+        .item-input.checked {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .add-item {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            cursor: pointer;
+            color: #666;
+        }
+        .add-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+        
+        /* Category selection */
+        .category-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .category-option {
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            flex: 1;
+            max-width: 120px;
+        }
+        .category-option.personal {
+            border-color: #ffd700;
+            color: #997a00;
+        }
+        .category-option.work {
+            border-color: #4caf50;
+            color: #2e7031;
+        }
+        .category-option.other {
+            border-color: #f44336;
+            color: #ba160a;
+        }
+        .category-option.selected {
+            color: white;
+            font-weight: bold;
+        }
+        .category-option.personal.selected {
+            background-color: #ffd700;
+            color: #333;
+        }
+        .category-option.work.selected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .category-option.other.selected {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        /* We removed the popup styles as we're using the inline category buttons instead */
+        
+        /* Footer toolbar */
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px;
+        }
+        .footer button {
+            background: transparent;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">⬅️</button>
+            <h2>Checklist</h2>
+        </div>
+        
+        <div class="date-info" id="dateInfo">Edited: <span id="editDate"></span></div>
+        
+        <!-- Category selection -->
+        <div class="category-options">
+            <div class="category-option personal" onclick="selectCategory('personal')">Personal</div>
+            <div class="category-option work" onclick="selectCategory('work')">Work</div>
+            <div class="category-option other" onclick="selectCategory('other')">Other</div>
+        </div>
+        <input type="hidden" id="noteCategory" value="personal">
+        
+        <div class="title-container">
+            <input type="text" class="title" placeholder="Title" id="noteTitle">
+            <div class="date-icon">📅</div>
+        </div>
+        
+        <div class="checklist-container" id="checklistContainer">
+            <!-- Checklist items will be added here -->
+        </div>
+        
+        <div class="add-item" onclick="addNewItem()">
+            <div class="add-icon">+</div>
+            <div>Add</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <button onclick="saveChecklist()">✔️</button>
+    </div>
+
+    <script>
+        // Initialize variables
+        let checklistItems = [];
+        let category = 'personal';
+        let noteToEdit = null;
+        
+        // Set current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const formattedDate = `${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            document.getElementById('editDate').textContent = formattedDate;
+        }
+        
+        // Check if we're editing an existing note
+        function checkEditMode() {
+            noteToEdit = JSON.parse(localStorage.getItem('noteToEdit'));
+            
+            if (noteToEdit) {
+                document.getElementById('noteTitle').value = noteToEdit.title;
+                document.querySelector('.header h2').textContent = 'Edit Checklist';
+                
+                // Load category
+                category = noteToEdit.category || 'personal';
+                selectCategory(category);
+                
+                // If checklist items exist
+                if (noteToEdit.checklistItems && Array.isArray(noteToEdit.checklistItems)) {
+                    checklistItems = noteToEdit.checklistItems;
+                    renderChecklist();
+                } else if (noteToEdit.content) {
+                    // Convert regular note content to checklist items
+                    const lines = noteToEdit.content.split('\n');
+                    checklistItems = lines.map(line => ({
+                        text: line.trim(),
+                        checked: false
+                    })).filter(item => item.text !== '');
+                    renderChecklist();
+                }
+            } else {
+                // Add one empty item for new checklists
+                addNewItem();
+            }
+        }
+        
+        // Render the checklist items
+        function renderChecklist() {
+            const container = document.getElementById('checklistContainer');
+            container.innerHTML = '';
+            
+            checklistItems.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'checklist-item';
+                itemElement.innerHTML = `
+                    <div class="checkbox ${item.checked ? 'checked' : ''}" onclick="toggleCheck(${index})"></div>
+                    <input type="text" class="item-input ${item.checked ? 'checked' : ''}" 
+                           value="${item.text}" 
+                           placeholder="List item" 
+                           oninput="updateItemText(${index}, this.value)">
+                `;
+                container.appendChild(itemElement);
+            });
+        }
+        
+        // Toggle checkbox state
+        function toggleCheck(index) {
+            checklistItems[index].checked = !checklistItems[index].checked;
+            renderChecklist();
+        }
+        
+        // Update item text
+        function updateItemText(index, text) {
+            checklistItems[index].text = text;
+        }
+        
+        // Add new checklist item
+        function addNewItem() {
+            checklistItems.push({
+                text: '',
+                checked: false
+            });
+            renderChecklist();
+            
+            // Focus on the new item
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('.item-input');
+                inputs[inputs.length - 1].focus();
+            }, 10);
+        }
+        
+        // Select category function
+        function selectCategory(category) {
+            // First, remove selected class from all options
+            document.querySelectorAll('.category-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selected class to the clicked option
+            document.querySelector(`.category-option.${category}`).classList.add('selected');
+            
+            // Update the hidden input value
+            document.getElementById('noteCategory').value = category;
+        }
+        
+        // Save checklist
+        function saveChecklist() {
+            const noteTitle = document.getElementById('noteTitle').value;
+            const noteCategory = document.getElementById('noteCategory').value;
+            
+            if (!noteTitle.trim()) {
+                alert('Please add a title to your checklist');
+                return;
+            }
+            
+            // Filter out empty items
+            const filteredItems = checklistItems.filter(item => item.text.trim() !== '');
+            
+            if (filteredItems.length === 0) {
+                alert('Please add at least one checklist item');
+                return;
+            }
+            
+            // Format content for display in index.html
+            const contentDisplay = filteredItems.map(item => 
+                `${item.checked ? '☑' : '☐'} ${item.text}`
+            ).join('<br>');
+            
+            const note = {
+                title: noteTitle,
+                content: contentDisplay,
+                rawContent: filteredItems.map(item => item.text).join('\n'),
+                checklistItems: filteredItems,
+                category: noteCategory,
+                date: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }),
+                type: 'checklist'
+            };
+            
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            
+            if (noteToEdit) {
+                notes[noteToEdit.index] = note;
+            } else {
+                notes.push(note);
+            }
+            
+            localStorage.setItem('notes', JSON.stringify(notes));
+            localStorage.removeItem('noteToEdit');
+            alert('Checklist saved!');
+            goBack();
+        }
+        
+        // Go back to index page
+        function goBack() {
+            localStorage.removeItem('noteToEdit');
+            window.location.href = 'index.html';
+        }
+        
+        // Initialize
+        window.onload = function() {
+            updateDateTime();
+            checkEditMode();
+            
+            // Set default category to personal
+            if (!noteToEdit) {
+                selectCategory('personal');
+            }
+        };
+    </script>
+</body>
+</html>

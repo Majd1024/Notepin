@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fdf5dc;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 15px;
+        }
+        .back-btn {
+            font-size: 32px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            margin-right: 15px;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            background: transparent;
+            outline: none;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        .note-area {
+            width: 100%;
+            height: 300px;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 22px;
+            margin-top: 10px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px;
+        }
+        .footer button {
+            background: transparent;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        
+        /* Compact font options */
+        .font-options {
+            display: none;
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .font-toolbar {
+            display: flex;
+            gap: 5px;
+        }
+        .font-btn {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .font-btn:hover {
+            background: #f0f0f0;
+        }
+        .font-btn.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #388E3C;
+        }
+        
+        /* Category selection */
+        .category-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .category-option {
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            flex: 1;
+            max-width: 120px;
+        }
+        .category-option.personal {
+            border-color: #ffd700;
+            color: #997a00;
+        }
+        .category-option.work {
+            border-color: #4caf50;
+            color: #2e7031;
+        }
+        .category-option.other {
+            border-color: #f44336;
+            color: #ba160a;
+        }
+        .category-option.selected {
+            color: white;
+            font-weight: bold;
+        }
+        .category-option.personal.selected {
+            background-color: #ffd700;
+            color: #333;
+        }
+        .category-option.work.selected {
+            background-color: #4caf50;
+            color: white;
+        }
+        .category-option.other.selected {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">⬅️</button>
+            <h2>Create Note</h2>
+        </div>
+        
+        <!-- Category selection -->
+        <div class="category-options">
+            <div class="category-option personal" onclick="selectCategory('personal')">Personal</div>
+            <div class="category-option work" onclick="selectCategory('work')">Work</div>
+            <div class="category-option other" onclick="selectCategory('other')">Other</div>
+        </div>
+        <input type="hidden" id="noteCategory" value="personal">
+        
+        <input type="text" class="title" placeholder="Title" id="noteTitle">
+        <textarea class="note-area" placeholder="Write your note..." id="noteContent"></textarea>
+    </div>
+    <div class="footer">
+        <button onclick="toggleFontOptions()">🅰️</button>
+        <button onclick="saveNote()">✔️</button>
+    </div>
+    
+    <!-- Compact font options panel -->
+    <div class="font-options" id="fontOptions">
+        <div class="font-toolbar">
+            <button class="font-btn" onclick="changeFont('Arial')">Arial</button>
+            <button class="font-btn" onclick="changeFont('Courier New')">Courier New</button>
+            <button class="font-btn" onclick="changeFont('Georgia')">Georgia</button>
+            <button class="font-btn" onclick="changeFont('Times New Roman')">Times New Roman</button>
+            <button class="font-btn" onclick="changeFont('Verdana')">Verdana</button>
+            <button class="font-btn" id="boldButton" onclick="toggleBold()">Bold</button>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're editing a note
+        const noteToEdit = JSON.parse(localStorage.getItem('noteToEdit'));
+        
+        // Select category function
+        function selectCategory(category) {
+            // First, remove selected class from all options
+            document.querySelectorAll('.category-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selected class to the clicked option
+            document.querySelector(`.category-option.${category}`).classList.add('selected');
+            
+            // Update the hidden input value
+            document.getElementById('noteCategory').value = category;
+        }
+
+        if (noteToEdit) {
+            document.getElementById('noteTitle').value = noteToEdit.title;
+            document.getElementById('noteContent').value = noteToEdit.content;
+            
+            // Set category if editing
+            const savedCategory = noteToEdit.category || 'personal';
+            document.getElementById('noteCategory').value = savedCategory;
+            selectCategory(savedCategory);
+            
+            // Apply font settings if they exist in the note being edited
+            if (noteToEdit.fontFamily) {
+                document.getElementById('noteTitle').style.fontFamily = noteToEdit.fontFamily;
+                document.getElementById('noteContent').style.fontFamily = noteToEdit.fontFamily;
+                
+                // Highlight the active font button
+                const fontButtons = document.querySelectorAll('.font-btn');
+                fontButtons.forEach(btn => {
+                    // Get first letter of font name
+                    const fontFirstLetter = noteToEdit.fontFamily.charAt(0);
+                    if (btn.innerText === fontFirstLetter) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+            
+            if (noteToEdit.fontWeight === 'bold') {
+                document.getElementById('noteTitle').style.fontWeight = 'bold';
+                document.getElementById('noteContent').style.fontWeight = 'bold';
+                document.getElementById('boldButton').classList.add('active');
+            }
+            
+            // Update header title to indicate editing mode
+            document.querySelector('.header h2').textContent = 'Edit Note';
+        } else {
+            // Select personal by default for new notes
+            selectCategory('personal');
+        }
+
+        // Function to go back to index.html
+        function goBack() {
+            localStorage.removeItem('noteToEdit'); // Clear the note to edit
+            window.location.href = 'index.html';
+        }
+
+// Function to save the note
+function saveNote() {
+    const noteTitle = document.querySelector('.title').value;
+    const noteContent = document.querySelector('.note-area').value;
+    const noteCategory = document.getElementById('noteCategory').value;
+    const noteFontFamily = document.getElementById('noteContent').style.fontFamily;
+    const noteFontWeight = document.getElementById('noteContent').style.fontWeight;
+
+    if (!noteTitle || !noteContent) {
+        alert('Please fill in both the title and content!');
+        return;
+    }
+
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+    const note = {
+        title: noteTitle,
+        content: noteContent,
+        category: noteCategory, // Save the selected category
+        fontFamily: noteFontFamily || '', // Save font family if set
+        fontWeight: noteFontWeight || 'normal', // Save font weight if set
+        date: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }), // Format: MM-DD
+        type: 'text' // Mark this as a text note
+    };
+
+    if (noteToEdit) {
+        // If editing, replace the old note
+        notes[noteToEdit.index] = note;
+    } else {
+        // If creating a new note, add it to the array
+        notes.push(note);
+    }
+
+    localStorage.setItem('notes', JSON.stringify(notes)); // Save back to localStorage
+    localStorage.removeItem('noteToEdit'); // Clear the note to edit
+    alert('Note saved!');
+    goBack(); // Redirect to index.html
+}
+        // Function to toggle font options
+        function toggleFontOptions() {
+            let fontMenu = document.getElementById('fontOptions');
+            fontMenu.style.display = fontMenu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Helper function to map font names to buttons
+        function getFontButtonLetter(font) {
+            const fontMap = {
+                'Arial': 'A',
+                'Courier New': 'C',
+                'Georgia': 'G',
+                'Times New Roman': 'T',
+                'Verdana': 'V'
+            };
+            return fontMap[font] || font.charAt(0);
+        }
+
+        // Function to change font family
+        function changeFont(font) {
+            // Remove active class from all font buttons
+            document.querySelectorAll('.font-btn').forEach(btn => {
+                if (!btn.id.includes('boldButton')) { // Don't remove from bold button
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Add active class to selected font button
+            const letter = getFontButtonLetter(font);
+            const buttons = document.querySelectorAll('.font-btn');
+            for (let btn of buttons) {
+                if (btn.innerText === letter) {
+                    btn.classList.add('active');
+                }
+            }
+            
+            document.getElementById('noteContent').style.fontFamily = font;
+            document.getElementById('noteTitle').style.fontFamily = font;
+        }
+
+        // Function to toggle bold text
+        function toggleBold() {
+            let noteContent = document.getElementById('noteContent');
+            let noteTitle = document.getElementById('noteTitle');
+            let boldButton = document.getElementById('boldButton');
+            
+            if (noteContent.style.fontWeight === 'bold') {
+                noteContent.style.fontWeight = 'normal';
+                noteTitle.style.fontWeight = 'normal';
+                boldButton.classList.remove('active');
+            } else {
+                noteContent.style.fontWeight = 'bold';
+                noteTitle.style.fontWeight = 'bold';
+                boldButton.classList.add('active');
+            }
+        }
+
+        // Close font options when clicking outside
+        document.addEventListener('click', function(event) {
+            const fontMenu = document.getElementById('fontOptions');
+            const fontButton = document.querySelector('.footer button:first-child');
+            
+            if (fontMenu.style.display === 'block' && 
+                !fontMenu.contains(event.target) && 
+                event.target !== fontButton) {
+                fontMenu.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
