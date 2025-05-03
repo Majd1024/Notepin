@@ -69,7 +69,8 @@
         gap: 10px;
       }
       .edit-icon,
-      .delete-icon {
+      .delete-icon,
+      .share-icon {
         cursor: pointer;
         font-size: 18px;
       }
@@ -78,6 +79,9 @@
       }
       .delete-icon:hover {
         color: #dc3545;
+      }
+      .share-icon:hover {
+        color: #28a745;
       }
       .note-category {
         font-size: 14px;
@@ -261,6 +265,67 @@
         window.location.href = "checklist.html?type=checklist";
       }
 
+      // Function to share a note
+      function shareNote(index) {
+        const notes = JSON.parse(localStorage.getItem("notes")) || [];
+        const noteToShare = notes[index];
+        
+        // Create the text to share
+        let shareText = `${noteToShare.title}\n\n`;
+        
+        // Handle different note types
+        if (noteToShare.type === 'checklist') {
+          // For checklists, use the raw content or format the checklist items
+          if (noteToShare.checklistItems) {
+            shareText += noteToShare.checklistItems.map(item => 
+              `${item.checked ? '✓' : '☐'} ${item.text}`
+            ).join('\n');
+          } else {
+            shareText += noteToShare.content.replace(/<br>/g, '\n');
+          }
+        } else {
+          // For regular text notes
+          shareText += noteToShare.content;
+        }
+        
+        // Add category and date
+        shareText += `\n\nCategory: ${noteToShare.category}`;
+        shareText += `\nDate: ${noteToShare.date}`;
+        
+        // Use the Web Share API if available
+        if (navigator.share) {
+          navigator.share({
+            title: noteToShare.title,
+            text: shareText
+          }).catch(err => {
+            console.error('Error sharing:', err);
+            // Fallback for browsers that support copying to clipboard
+            copyToClipboard(shareText);
+          });
+        } else {
+          // Fallback for browsers that don't support Web Share API
+          copyToClipboard(shareText);
+        }
+      }
+      
+      // Helper function to copy text to clipboard
+      function copyToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          alert('Note copied to clipboard! You can now paste it in your messaging app.');
+        } catch (err) {
+          console.error('Failed to copy text:', err);
+          alert('Unable to copy to clipboard. Please manually copy the note content.');
+        }
+        
+        document.body.removeChild(textArea);
+      }
+
       // Function to load and display notes
       function loadNotes(filterCategory = "all") {
         const notes = JSON.parse(localStorage.getItem("notes")) || [];
@@ -282,6 +347,7 @@
                         <strong>${note.title}</strong>
                         <div class="note-actions">
                             <span class="edit-icon" onclick="editNote(${index})">✎</span>
+                            <span class="share-icon" onclick="shareNote(${index})">📤</span>
                             <span class="delete-icon" onclick="deleteNote(${index})">🗑️</span>
                         </div>
                     </div>
