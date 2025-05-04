@@ -275,13 +275,18 @@
         
         // Handle different note types
         if (noteToShare.type === 'checklist') {
-          // For checklists, use the raw content or format the checklist items
-          if (noteToShare.checklistItems) {
+          // For checklists, format with better checkbox symbols that work in text messages
+          if (noteToShare.checklistItems && Array.isArray(noteToShare.checklistItems)) {
+            // Use universally recognized symbols for checkboxes in text messages
             shareText += noteToShare.checklistItems.map(item => 
-              `${item.checked ? '✓' : '☐'} ${item.text}`
+              `${item.checked ? '✅' : '⬜'} ${item.text}`
             ).join('\n');
           } else {
-            shareText += noteToShare.content.replace(/<br>/g, '\n');
+            // Fallback to content with better symbols
+            shareText += noteToShare.content
+              .replace(/<br>/g, '\n')
+              .replace(/☑/g, '✅')
+              .replace(/☐/g, '⬜');
           }
         } else {
           // For regular text notes
